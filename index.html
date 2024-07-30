@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag and Resize Text and Image on Canvas</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .inputs {
+            margin-top: 30px;
+            padding: 20px;
+            background: #ffffff;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 80%;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px;
+        }
+
+        .inputs .input-group {
+            display: flex;
+            flex-direction: column;
+            width: calc(33.333% - 20px);
+            margin-bottom: 15px;
+        }
+
+        .inputs input[type="text"],
+        .inputs input[type="color"],
+        .inputs input[type="file"],
+        .inputs input[type="range"],
+        .inputs button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background: #eaf2f8;
+            color: #333;
+        }
+
+        .inputs input[type="text"] {
+            background: #d4e6f1;
+        }
+
+        .inputs input[type="color"] {
+            background: #a9cce3;
+        }
+
+        .inputs input[type="file"] {
+            background: #aed6f1;
+        }
+
+        .inputs label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #5d6d7e;
+        }
+
+        .inputs .range-label {
+            display: flex;
+            justify-content: space-between;
+            color: #5d6d7e;
+        }
+
+        #myCanvas {
+            background: #f7fbfc;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .inputs {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .inputs .input-group {
+                width: 100%;
+            }
+
+            #myCanvas {
+                width: 100%;
+            }
+        }
+
+        /* Style for range input elements */
+        .inputs input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #3498db, #8e44ad);
+            outline: none;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .inputs input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s ease;
+        }
+
+        .inputs input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s ease;
+        }
+
+        .inputs input[type="range"]::-webkit-slider-thumb:hover {
+            background: #8e44ad;
+        }
+
+        .inputs input[type="range"]::-moz-range-thumb:hover {
+            background: #8e44ad;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="myCanvas"></canvas>
+    <div class="inputs">
+        <div class="input-group">
+            <label for="textInput">Text:</label>
+            <input type="text" id="textInput" placeholder="Enter text here" value="Nature">
+        </div>
+        <div class="input-group">
+            <label for="textWidthInput">Text Size:</label>
+            <div class="range-label">
+                <span id="textSizeValue">30px</span>
+            </div>
+            <input type="range" id="textWidthInput" min="10" max="150" value="40">
+        </div>
+        <div class="input-group">
+            <label for="textColorInput">Text Color:</label>
+            <input type="color" id="textColorInput" value="#ffffff">
+        </div>
+        <div class="input-group">
+            <input type="file" id="imageInput">
+        </div>
+        <div class="input-group">
+            <label for="imageWidthInput">Image Width:</label>
+            <div class="range-label">
+                <span id="imageWidthValue">100px</span>
+            </div>
+            <input type="range" id="imageWidthInput" min="50" max="1000" value="800">
+        </div>
+        <div class="input-group">
+            <button class="download-btn" id="downloadBtn">Download Canvas as PNG</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const textInput = document.getElementById('textInput');
+        const textWidthInput = document.getElementById('textWidthInput');
+        const textColorInput = document.getElementById('textColorInput');
+        const imageInput = document.getElementById('imageInput');
+        const imageWidthInput = document.getElementById('imageWidthInput');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const textSizeValue = document.getElementById('textSizeValue');
+        const imageWidthValue = document.getElementById('imageWidthValue');
+
+        function setCanvasSize() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            canvas.height = h / 2;
+            canvas.width = w / 2;
+        }
+
+        setCanvasSize();
+
+        const ctx = canvas.getContext('2d');
+        let text = textInput.value;
+        let textX = 20;
+        let textY = 50;
+        let textSize = parseInt(textWidthInput.value);
+        let textColor = textColorInput.value;
+        let isDraggingText = false;
+        let isDraggingImage = false;
+        let offsetX, offsetY;
+
+        let img = new Image();
+        let imgX = 0;
+        let imgY = 0;
+        let imgWidth = parseInt(imageWidthInput.value);
+        let imgHeight;
+        let imgOriginalWidth, imgOriginalHeight;
+        let imgLoaded = false;
+
+        
+        const defaultImageURL = './nature.jpg'; 
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+            if (imgLoaded) {
+                ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
+            }
+
+            ctx.font = `${textSize}px Arial`;
+            ctx.fillStyle = textColor;
+            ctx.fillText(text, textX, textY);
+        }
+
+        
+        img.onload = function () {
+            imgLoaded = true;
+            imgOriginalWidth = img.width;
+            imgOriginalHeight = img.height;
+            imgHeight = (imgOriginalHeight / imgOriginalWidth) * imgWidth;
+            draw();
+        };
+        img.src = defaultImageURL;
+
+        textInput.addEventListener('input', (e) => {
+            text = e.target.value;
+            draw();
+        });
+
+        textWidthInput.addEventListener('input', (e) => {
+            textSize = parseInt(e.target.value);
+            textSizeValue.textContent = `${textSize}px`;
+            draw();
+        });
+
+        textColorInput.addEventListener('input', (e) => {
+            textColor = e.target.value;
+            draw();
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            console.log(file);
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                img.onload = function () {
+                    imgLoaded = true;
+                    imgOriginalWidth = img.width;
+                    imgOriginalHeight = img.height;
+                    imgHeight = (imgOriginalHeight / imgOriginalWidth) * imgWidth;
+                    draw();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        imageWidthInput.addEventListener('input', (e) => {
+            imgWidth = parseInt(e.target.value);
+            imageWidthValue.textContent = `${imgWidth}px`;
+            imgHeight = (imgOriginalHeight / imgOriginalWidth) * imgWidth;
+            draw();
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const mousePos = getMousePos(canvas, e);
+            if (isMouseOnText(mousePos, textX, textY, text)) {
+                isDraggingText = true;
+                offsetX = mousePos.x - textX;
+                offsetY = mousePos.y - textY;
+            } else if (isMouseOnImage(mousePos, imgX, imgY, imgWidth, imgHeight)) {
+                isDraggingImage = true;
+                offsetX = mousePos.x - imgX;
+                offsetY = mousePos.y - imgY;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDraggingText) {
+                const mousePos = getMousePos(canvas, e);
+                textX = mousePos.x - offsetX;
+                textY = mousePos.y - offsetY;
+                draw();
+            } else if (isDraggingImage) {
+                const mousePos = getMousePos(canvas, e);
+                imgX = mousePos.x - offsetX;
+                imgY = mousePos.y - offsetY;
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDraggingText = false;
+            isDraggingImage = false;
+        });
+
+        function getMousePos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        function isMouseOnText(mousePos, x, y, text) {
+            const metrics = ctx.measureText(text);
+            const textWidth = metrics.width;
+            const textHeight = parseInt(ctx.font, 10); 
+            return mousePos.x >= x && mousePos.x <= x + textWidth &&
+                mousePos.y >= y - textHeight && mousePos.y <= y;
+        }
+
+        function isMouseOnImage(mousePos, x, y, width, height) {
+            return mousePos.x >= x && mousePos.x <= x + width &&
+                mousePos.y >= y && mousePos.y <= y + height;
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'canvas.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        draw();
+    </script>
+</body>
+
+</html>
